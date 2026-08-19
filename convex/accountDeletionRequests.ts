@@ -47,6 +47,19 @@ export const adminList = query({
   },
 });
 
+export const purgeCompleted = mutation({
+  args: { adminTokenHash: v.string() },
+  handler: async (ctx, { adminTokenHash }) => {
+    await requireAdmin(ctx, adminTokenHash);
+    const completed = await ctx.db
+      .query('accountDeletionRequests')
+      .filter((q) => q.eq(q.field('status'), 'COMPLETED'))
+      .collect();
+    for (const request of completed) await ctx.db.delete(request._id);
+    return { deleted: completed.length };
+  },
+});
+
 export const approve = mutation({
   args: { adminTokenHash: v.string(), requestId: v.id('accountDeletionRequests') },
   handler: async (ctx, { adminTokenHash, requestId }) => {
