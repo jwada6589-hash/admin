@@ -5,6 +5,17 @@ import type { Id } from './_generated/dataModel';
 
 const optionValidator = v.object({ name: v.string(), values: v.array(v.string()) });
 
+const removeStorageFileIfPresent = async (ctx: MutationCtx, storageId?: Id<'_storage'>) => {
+  if (!storageId) return;
+  try {
+    await ctx.storage.delete(storageId);
+  } catch (error) {
+    // Seeded or previously cleaned records may still reference a missing file.
+    // Missing media must never prevent the database record from being deleted.
+    if (!String(error).includes('not found')) throw error;
+  }
+};
+
 const removeProductAndRelations = async (ctx: MutationCtx, id: Id<'products'>) => {
   const product = await ctx.db.get(id);
   if (!product) return;
@@ -15,7 +26,7 @@ const removeProductAndRelations = async (ctx: MutationCtx, id: Id<'products'>) =
     if (favorite.productId === id) await ctx.db.delete(favorite._id);
   }
   await ctx.db.delete(id);
-  if (product.imageStorageId) await ctx.storage.delete(product.imageStorageId);
+  await removeStorageFileIfPresent(ctx, product.imageStorageId);
 };
 
 const removeSubcategoryAndProducts = async (ctx: MutationCtx, id: Id<'subcategories'>) => {
@@ -24,7 +35,7 @@ const removeSubcategoryAndProducts = async (ctx: MutationCtx, id: Id<'subcategor
   const products = await ctx.db.query('products').withIndex('by_subcategory', (q) => q.eq('subcategoryId', id)).collect();
   for (const product of products) await removeProductAndRelations(ctx, product._id);
   await ctx.db.delete(id);
-  if (subcategory.imageStorageId) await ctx.storage.delete(subcategory.imageStorageId);
+  await removeStorageFileIfPresent(ctx, subcategory.imageStorageId);
 };
 
 export const categories = query({
@@ -63,7 +74,7 @@ export const deleteCategory = mutation({
     const subcategories = await ctx.db.query('subcategories').withIndex('by_category', (q) => q.eq('categoryId', args.id)).collect();
     for (const subcategory of subcategories) await removeSubcategoryAndProducts(ctx, subcategory._id);
     await ctx.db.delete(args.id);
-    if (category.imageStorageId) await ctx.storage.delete(category.imageStorageId);
+    await removeStorageFileIfPresent(ctx, category.imageStorageId);
   },
 });
 
@@ -180,7 +191,7 @@ export const saveGift = mutation({
   },
 });
 
-export const deleteGift = mutation({ args: { adminTokenHash: v.string(), id: v.id('gifts') }, handler: async (ctx, args) => { await requireAdmin(ctx, args.adminTokenHash); const gift = await ctx.db.get(args.id); if (!gift) return; await ctx.db.delete(args.id); if (gift.imageStorageId) await ctx.storage.delete(gift.imageStorageId); } });
+export const deleteGift = mutation({ args: { adminTokenHash: v.string(), id: v.id('gifts') }, handler: async (ctx, args) => { await requireAdmin(ctx, args.adminTokenHash); const gift = await ctx.db.get(args.id); if (!gift) return; await ctx.db.delete(args.id); await removeStorageFileIfPresent(ctx, gift.imageStorageId); } });
 
 export const dashboard = query({
   args: { adminTokenHash: v.string() },
