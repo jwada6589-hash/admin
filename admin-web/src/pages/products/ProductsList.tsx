@@ -6,6 +6,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useAdmin } from '../../shared/context/AdminContext';
 import { useStorageUpload } from '../../shared/useStorageUpload';
+import DeleteConfirmDialog from '../../components/DeleteConfirmDialog';
 
 export default function ProductsList() {
   const { branchId } = useParams();
@@ -23,6 +24,7 @@ export default function ProductsList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [optionDeleteConfirm, setOptionDeleteConfirm] = useState<string | null>(null);
 
   // Form State
   const [newProdName, setNewProdName] = useState('');
@@ -280,7 +282,7 @@ export default function ProductsList() {
                           ))}
                         </div>
                       </div>
-                      <button onClick={() => handleRemoveOption(opt.name)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors">
+                      <button onClick={() => setOptionDeleteConfirm(opt.name)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -343,25 +345,25 @@ export default function ProductsList() {
       )}
 
       {/* Delete Confirm Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-8 h-8" />
-            </div>
-            <h3 className="font-bold text-lg mb-2">هل أنت متأكد من الحذف؟</h3>
-            <p className="text-gray-500 text-sm mb-6">سيتم حذف هذا المنتج نهائياً.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
-                إلغاء
-              </button>
-              <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
-                تأكيد الحذف
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmDialog
+        open={Boolean(deleteConfirm)}
+        title="حذف المنتج؟"
+        description="سيُحذف المنتج وعروضه وإشاراته من المفضلة فورًا."
+        itemName={products.find((product) => product.id === deleteConfirm)?.name}
+        onCancel={() => setDeleteConfirm(null)}
+        onConfirm={() => handleDelete(deleteConfirm!)}
+      />
+      <DeleteConfirmDialog
+        open={Boolean(optionDeleteConfirm)}
+        title="حذف الخيار؟"
+        description="سيُحذف هذا الخيار من بيانات المنتج عند حفظ التعديلات."
+        itemName={optionDeleteConfirm ?? undefined}
+        onCancel={() => setOptionDeleteConfirm(null)}
+        onConfirm={async () => {
+          handleRemoveOption(optionDeleteConfirm!);
+          setOptionDeleteConfirm(null);
+        }}
+      />
     </div>
   );
 }

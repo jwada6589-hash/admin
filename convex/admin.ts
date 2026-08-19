@@ -1,8 +1,31 @@
-import { mutation, query } from './_generated/server';
+import { mutation, query, type MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { requireAdmin } from './lib/auth';
+import type { Id } from './_generated/dataModel';
 
 const optionValidator = v.object({ name: v.string(), values: v.array(v.string()) });
+
+const removeProductAndRelations = async (ctx: MutationCtx, id: Id<'products'>) => {
+  const product = await ctx.db.get(id);
+  if (!product) return;
+  for (const offer of await ctx.db.query('offers').withIndex('by_product', (q) => q.eq('productId', id)).collect()) {
+    await ctx.db.delete(offer._id);
+  }
+  for (const favorite of await ctx.db.query('favorites').collect()) {
+    if (favorite.productId === id) await ctx.db.delete(favorite._id);
+  }
+  await ctx.db.delete(id);
+  if (product.imageStorageId) await ctx.storage.delete(product.imageStorageId);
+};
+
+const removeSubcategoryAndProducts = async (ctx: MutationCtx, id: Id<'subcategories'>) => {
+  const subcategory = await ctx.db.get(id);
+  if (!subcategory) return;
+  const products = await ctx.db.query('products').withIndex('by_subcategory', (q) => q.eq('subcategoryId', id)).collect();
+  for (const product of products) await removeProductAndRelations(ctx, product._id);
+  await ctx.db.delete(id);
+  if (subcategory.imageStorageId) await ctx.storage.delete(subcategory.imageStorageId);
+};
 
 export const categories = query({
   args: { adminTokenHash: v.string() },
@@ -35,8 +58,12 @@ export const deleteCategory = mutation({
   args: { adminTokenHash: v.string(), id: v.id('categories') },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.adminTokenHash);
-    if ((await ctx.db.query('subcategories').withIndex('by_category', (q) => q.eq('categoryId', args.id)).first())) throw new Error('CATEGORY_HAS_BRANCHES');
+    const category = await ctx.db.get(args.id);
+    if (!category) return;
+    const subcategories = await ctx.db.query('subcategories').withIndex('by_category', (q) => q.eq('categoryId', args.id)).collect();
+    for (const subcategory of subcategories) await removeSubcategoryAndProducts(ctx, subcategory._id);
     await ctx.db.delete(args.id);
+    if (category.imageStorageId) await ctx.storage.delete(category.imageStorageId);
   },
 });
 
@@ -71,8 +98,7 @@ export const deleteSubcategory = mutation({
   args: { adminTokenHash: v.string(), id: v.id('subcategories') },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.adminTokenHash);
-    if ((await ctx.db.query('products').withIndex('by_subcategory', (q) => q.eq('subcategoryId', args.id)).first())) throw new Error('BRANCH_HAS_PRODUCTS');
-    await ctx.db.delete(args.id);
+    await removeSubcategoryAndProducts(ctx, args.id);
   },
 });
 
@@ -109,11 +135,8 @@ export const deleteProduct = mutation({
   args: { adminTokenHash: v.string(), id: v.id('products') },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.adminTokenHash);
-    const used = (await ctx.db.query('orders').collect()).some((o) => o.items.some((i) => i.productId === args.id));
-    if (used) { await ctx.db.patch(args.id, { isActive: false, updatedAt: Date.now() }); return 'disabled'; }
-    for (const offer of await ctx.db.query('offers').withIndex('by_product', (q) => q.eq('productId', args.id)).collect()) await ctx.db.delete(offer._id);
-    for (const fav of await ctx.db.query('favorites').collect()) if (fav.productId === args.id) await ctx.db.delete(fav._id);
-    await ctx.db.delete(args.id); return 'deleted';
+    await removeProductAndRelations(ctx, args.id);
+    return 'deleted';
   },
 });
 
@@ -157,7 +180,7 @@ export const saveGift = mutation({
   },
 });
 
-export const deleteGift = mutation({ args: { adminTokenHash: v.string(), id: v.id('gifts') }, handler: async (ctx, args) => { await requireAdmin(ctx, args.adminTokenHash); const used = (await ctx.db.query('redemptions').collect()).some((r) => r.giftId === args.id); if (used) await ctx.db.patch(args.id, { isActive: false, updatedAt: Date.now() }); else await ctx.db.delete(args.id); } });
+export const deleteGift = mutation({ args: { adminTokenHash: v.string(), id: v.id('gifts') }, handler: async (ctx, args) => { await requireAdmin(ctx, args.adminTokenHash); const gift = await ctx.db.get(args.id); if (!gift) return; await ctx.db.delete(args.id); if (gift.imageStorageId) await ctx.storage.delete(gift.imageStorageId); } });
 
 export const dashboard = query({
   args: { adminTokenHash: v.string() },

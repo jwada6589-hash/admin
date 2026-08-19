@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Power, PowerOff, X, Image as ImageIcon, AlertTriangle, Gift as GiftIcon } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Power, PowerOff, X, Image as ImageIcon, Gift as GiftIcon } from 'lucide-react';
 import { Gift, GiftStatus, GIFT_STATUS_DEF, getGiftStatus } from './types';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useAdmin } from '../../../shared/context/AdminContext';
 import { useStorageUpload } from '../../../shared/useStorageUpload';
+import DeleteConfirmDialog from '../../../components/DeleteConfirmDialog';
 
 export default function GiftsList() {
   const { tokenHash } = useAdmin();
@@ -314,35 +315,14 @@ export default function GiftsList() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {isDeleteOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-xl p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8" />
-            </div>
-            <h3 className="font-bold text-xl mb-2 text-gray-900">تأكيد الحذف</h3>
-            <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-              هل أنت متأكد من حذف هذه الهدية؟
-              <br />
-              <span className="font-bold text-gray-700 mt-2 block text-xs">ملاحظة مستقبلية: إذا كانت الهدية تحتوي على سجلات استبدال سابقة، يفضل إيقافها بدلاً من حذفها للحفاظ على السجلات.</span>
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setIsDeleteOpen(null)} 
-                className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
-              >
-                إلغاء
-              </button>
-              <button 
-                onClick={handleDelete} 
-                className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-sm"
-              >
-                تأكيد الحذف
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmDialog
+        open={Boolean(isDeleteOpen)}
+        title="حذف الهدية؟"
+        description="سيتم حذف الهدية فورًا من لوحة الإدارة وتطبيق المستخدم."
+        itemName={gifts.find((gift) => gift.id === isDeleteOpen)?.name}
+        onCancel={() => setIsDeleteOpen(null)}
+        onConfirm={handleDelete}
+      />
 
     </div>
   );
