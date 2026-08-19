@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Truck, Edit2, X, CheckCircle, Gift, Settings } from 'lucide-react';
+import { Truck, Edit2, X, CheckCircle, Gift, Settings, Images } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
@@ -117,6 +117,22 @@ export default function MoreView() {
               الدخول للوحة الهدايا
             </button>
           </div>
+        </div>
+
+        {/* General Settings Card */}
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between h-full transition-all hover:shadow-md cursor-pointer" onClick={() => navigate('/more/banners')}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shrink-0">
+              <Images className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900">إدارة البنرات</h3>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">رفع عدة صور والتحكم ببنر تطبيق المستخدم</p>
+            </div>
+          </div>
+          <button className="w-full bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 font-bold py-3 rounded-2xl transition-colors shadow-sm">
+            فتح إدارة البنرات
+          </button>
         </div>
 
         {/* General Settings Card */}

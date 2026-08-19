@@ -108,6 +108,12 @@ export default defineSchema({
     .index('by_product', ['productId'])
     .index('by_enabled', ['isEnabled']),
 
+  banners: defineTable({
+    imageStorageId: v.id('_storage'),
+    sortOrder: v.number(),
+    createdAt: v.number(),
+  }).index('by_sort_order', ['sortOrder']),
+
   favorites: defineTable({
     userId: v.id('users'),
     productId: v.id('products'),

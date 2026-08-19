@@ -5,6 +5,7 @@ import ProductsView from './products/ProductsView';
 import OrdersView from './orders/OrdersView';
 import OffersView from './offers/OffersView';
 import MoreView from './more/MoreView';
+import BannersView from './more/banners/BannersView';
 import GiftsView from './more/gifts/GiftsView';
 import SettingsView from './settings/SettingsView';
 import { LogOut, Home, Package, ClipboardList, Tag, Menu, Settings } from 'lucide-react';
@@ -81,6 +82,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           <Route path="/offers/*" element={<OffersView />} />
           <Route path="/more" element={<MoreView />} />
           <Route path="/more/gifts/*" element={<GiftsView />} />
+          <Route path="/more/banners" element={<BannersView />} />
           <Route path="/settings/*" element={<SettingsView onLogout={onLogout} />} />
         </Routes>
       </main>
