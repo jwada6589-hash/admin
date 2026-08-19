@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, Phone, User, Package, AlertTriangle, AlertCircle } from 'lucide-react';
+import { ArrowRight, MapPin, Phone, User, Package, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 import { Order, OrderStatus, STATUS_DETAILS, StatusUpdateResult } from './types';
 
 function OrderItemImage({ src, alt }: { src: string; alt: string }) {
