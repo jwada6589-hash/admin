@@ -17,6 +17,13 @@ const redemptionStatus = v.union(
   v.literal('CANCELLED'),
 );
 
+const accountDeletionStatus = v.union(
+  v.literal('PENDING'),
+  v.literal('APPROVED'),
+  v.literal('REJECTED'),
+  v.literal('COMPLETED'),
+);
+
 export default defineSchema({
   users: defineTable({
     fullName: v.string(),
@@ -38,6 +45,19 @@ export default defineSchema({
   })
     .index('by_token_hash', ['tokenHash'])
     .index('by_user', ['userId']),
+
+  accountDeletionRequests: defineTable({
+    userId: v.id('users'),
+    userName: v.string(),
+    phone: v.string(),
+    status: accountDeletionStatus,
+    requestedAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.id('adminUsers')),
+  })
+    .index('by_user', ['userId'])
+    .index('by_status', ['status']),
 
   adminUsers: defineTable({
     name: v.string(),

@@ -25,18 +25,3 @@ export const logout = mutation({
     if (session) await ctx.db.delete(session._id);
   },
 });
-
-export const deleteAccount = mutation({
-  args: { tokenHash: v.string(), confirmation: v.string() },
-  handler: async (ctx, args) => {
-    if (args.confirmation !== 'DELETE') throw new Error('CONFIRMATION_REQUIRED');
-    const user = await requireUser(ctx, args.tokenHash);
-    await ctx.db.patch(user._id, {
-      fullName: 'حساب محذوف', phone: `deleted-${user._id}`, passwordHash: 'deleted',
-      address: '', landmark: '', notes: '', isDeleted: true, updatedAt: Date.now(),
-    });
-    const sessions = await ctx.db.query('userSessions').withIndex('by_user', (q) => q.eq('userId', user._id)).collect();
-    const favorites = await ctx.db.query('favorites').withIndex('by_user', (q) => q.eq('userId', user._id)).collect();
-    await Promise.all([...sessions, ...favorites].map((doc) => ctx.db.delete(doc._id)));
-  },
-});
