@@ -83,9 +83,12 @@ export const updateStatus = mutation({
     if (order.status === 'DELIVERED' && args.status !== 'DELIVERED') throw new Error('DELIVERED_ORDER_IS_FINAL');
     const now = Date.now();
     await ctx.db.patch(order._id, { status: args.status, rejectionReason: args.status === 'REJECTED' ? args.rejectionReason : undefined, updatedAt: now });
-    if (args.status === 'DELIVERED' && !order.cashbackProcessed) {
-      const amount = Math.floor(order.total * 0.01);
+    let cashbackAdded = false;
+    let cashbackAmount = 0;
+    if (args.status === 'DELIVERED') {
       const existingTx = await ctx.db.query('walletTransactions').withIndex('by_order', (q) => q.eq('orderId', order._id)).first();
+      cashbackAmount = existingTx?.amount ?? Math.floor(order.subtotal * 0.01);
+      const amount = cashbackAmount;
       if (!existingTx && amount > 0) {
         let wallet = await ctx.db.query('wallets').withIndex('by_user', (q) => q.eq('userId', order.userId)).unique();
         if (!wallet) {
@@ -94,10 +97,12 @@ export const updateStatus = mutation({
         }
         if (!wallet) throw new Error('WALLET_NOT_FOUND');
         await ctx.db.patch(wallet._id, { balance: wallet.balance + amount, totalEarned: wallet.totalEarned + amount, updatedAt: now });
-        await ctx.db.insert('walletTransactions', { userId: order.userId, type: 'EARN', amount, orderId: order._id, description: `استرجاع نقدي 1% من الطلب #${order.orderNumber}`, createdAt: now });
+        await ctx.db.insert('walletTransactions', { userId: order.userId, type: 'EARN', amount, orderId: order._id, description: `استرجاع نقدي 1% من منتجات الطلب #${order.orderNumber}`, createdAt: now });
+        cashbackAdded = true;
       }
-      await ctx.db.patch(order._id, { cashbackProcessed: true, updatedAt: now });
+      if (!order.cashbackProcessed) await ctx.db.patch(order._id, { cashbackProcessed: true, updatedAt: now });
     }
+    return { cashbackAdded, cashbackAmount };
   },
 });
 

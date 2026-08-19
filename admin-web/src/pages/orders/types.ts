@@ -1,5 +1,10 @@
 export type OrderStatus = 'NEW' | 'ACCEPTED' | 'PREPARING' | 'WITH_COURIER' | 'DELIVERED' | 'REJECTED';
 
+export interface StatusUpdateResult {
+  cashbackAdded: boolean;
+  cashbackAmount: number;
+}
+
 export interface OrderItem {
   id: string;
   productId: string;

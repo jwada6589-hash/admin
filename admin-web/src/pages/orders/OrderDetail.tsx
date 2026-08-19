@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Phone, User, Package, AlertTriangle, AlertCircle } from 'lucide-react';
-import { Order, OrderStatus, STATUS_DETAILS } from './types';
+import { Order, OrderStatus, STATUS_DETAILS, StatusUpdateResult } from './types';
 
 function OrderItemImage({ src, alt }: { src: string; alt: string }) {
   const [hasError, setHasError] = useState(false);
@@ -24,7 +24,7 @@ function OrderItemImage({ src, alt }: { src: string; alt: string }) {
 
 interface OrderDetailProps {
   orders: Order[];
-  onUpdateStatus: (orderId: string, status: OrderStatus, rejectReason?: string) => Promise<void>;
+  onUpdateStatus: (orderId: string, status: OrderStatus, rejectReason?: string) => Promise<StatusUpdateResult>;
 }
 
 export default function OrderDetail({ orders, onUpdateStatus }: OrderDetailProps) {
@@ -60,9 +60,12 @@ export default function OrderDetail({ orders, onUpdateStatus }: OrderDetailProps
   };
 
   const confirmDeliver = async () => {
-    await onUpdateStatus(order.id, 'DELIVERED');
+    const result = await onUpdateStatus(order.id, 'DELIVERED');
     setIsConfirmDeliverModalOpen(false);
-    navigate('/orders', { replace: true });
+    const deliveryNotice = result.cashbackAdded
+      ? `تم التسليم وإضافة ${result.cashbackAmount.toLocaleString('ar-IQ')} د.ع إلى محفظة الزبون.`
+      : `تم التسليم. نسبة المحفظة لهذا الطلب مسجلة مسبقاً بقيمة ${result.cashbackAmount.toLocaleString('ar-IQ')} د.ع.`;
+    navigate('/orders', { replace: true, state: { deliveryNotice } });
   };
 
   const handleReject = async () => {
@@ -270,7 +273,7 @@ export default function OrderDetail({ orders, onUpdateStatus }: OrderDetailProps
               هل أنت متأكد من تسجيل الطلب كتم التسليم؟
             </p>
             <div className="bg-orange-50 text-orange-700 text-xs p-3 rounded-xl mb-6 font-semibold">
-              سيتم لاحقاً احتساب الاسترجاع النقدي (1%) إلى محفظة الزبون تلقائياً عند تغيير الحالة.
+              عند التأكيد ستُضاف نسبة 1% من مجموع المنتجات إلى محفظة الزبون تلقائياً، من دون أجرة التوصيل.
             </div>
             <div className="flex gap-3">
               <button 

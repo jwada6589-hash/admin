@@ -13,7 +13,7 @@ export default function OrdersView() {
   const deleteOrder = useMutation(api.orders.deleteOrder);
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus, rejectReason?: string) => {
-    await updateStatus({ adminTokenHash: tokenHash, orderId: orderId as any, status, rejectionReason: rejectReason });
+    return await updateStatus({ adminTokenHash: tokenHash, orderId: orderId as any, status, rejectionReason: rejectReason });
   };
 
   const handleDeleteOrder = async (orderId: string) => {

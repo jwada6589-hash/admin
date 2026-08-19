@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, ChevronLeft, Package, Clock, Truck, CheckCircle, Trash2 } from 'lucide-react';
 import { Order, OrderStatus, STATUS_DETAILS } from './types';
 import DeleteConfirmDialog from '../../components/DeleteConfirmDialog';
@@ -11,6 +11,8 @@ interface OrdersListProps {
 
 export default function OrdersList({ orders, onDeleteOrder }: OrdersListProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const deliveryNotice = (location.state as { deliveryNotice?: string } | null)?.deliveryNotice;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -49,6 +51,13 @@ export default function OrdersList({ orders, onDeleteOrder }: OrdersListProps) {
 
   return (
     <div className="space-y-6">
+      {deliveryNotice && (
+        <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800 shadow-sm" role="status">
+          <CheckCircle className="h-6 w-6 shrink-0" />
+          <p className="font-bold">{deliveryNotice}</p>
+        </div>
+      )}
+
       {/* Header Stats */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">الطلبات</h2>
