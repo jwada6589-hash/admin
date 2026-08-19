@@ -103,13 +103,9 @@ export const completeDeletion = internalMutation({
         updatedAt: Date.now(),
       });
     }
-    const now = Date.now();
-    await ctx.db.patch(requestId, {
-      userName: 'حساب محذوف',
-      phone: '',
-      status: 'COMPLETED',
-      completedAt: now,
-    });
+    // The request is no longer useful after the account deletion has completed.
+    // Removing it also makes its card disappear from the reactive admin list.
+    await ctx.db.delete(requestId);
     return { completed: true, duplicate: false };
   },
 });
