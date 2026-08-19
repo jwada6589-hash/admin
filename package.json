@@ -1,0 +1,15 @@
+{
+  "name": "al-murtada-admin",
+  "private": true,
+  "workspaces": ["admin-web"],
+  "scripts": {
+    "dev": "npm run dev --workspace=admin-web",
+    "build": "npm run build --workspace=admin-web",
+    "preview": "npm run preview --workspace=admin-web",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex dev --once"
+  },
+  "devDependencies": {
+    "convex": "^1.44.0"
+  }
+}

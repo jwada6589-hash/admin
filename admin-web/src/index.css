@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #055C33;
+  --color-primary-dark: #044727;
+  --color-accent: #F9B32B;
+}
+html, body, #root {
+  height: 100%;
+}
