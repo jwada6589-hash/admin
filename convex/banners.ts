@@ -9,7 +9,8 @@ export const active = query({
     return await Promise.all(
       banners.map(async (banner) => ({
         id: banner._id,
-        imageUrl: await ctx.storage.getUrl(banner.imageStorageId),
+        imageUrl: banner.imageStorageId ? await ctx.storage.getUrl(banner.imageStorageId) : banner.externalImageUrl ?? null,
+        legacyKey: banner.legacyKey,
         sortOrder: banner.sortOrder,
       })),
     );
@@ -24,7 +25,8 @@ export const list = query({
     return await Promise.all(
       banners.map(async (banner) => ({
         id: banner._id,
-        imageUrl: await ctx.storage.getUrl(banner.imageStorageId),
+        imageUrl: banner.imageStorageId ? await ctx.storage.getUrl(banner.imageStorageId) : banner.externalImageUrl ?? null,
+        legacyKey: banner.legacyKey,
         sortOrder: banner.sortOrder,
       })),
     );
@@ -51,7 +53,7 @@ export const remove = mutation({
     await requireAdmin(ctx, adminTokenHash);
     const banner = await ctx.db.get(id);
     if (!banner) return;
-    await ctx.storage.delete(banner.imageStorageId);
+    if (banner.imageStorageId) await ctx.storage.delete(banner.imageStorageId);
     await ctx.db.delete(id);
   },
 });

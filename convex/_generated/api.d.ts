@@ -14,6 +14,8 @@ import type * as authActions from "../authActions.js";
 import type * as authInternal from "../authInternal.js";
 import type * as banners from "../banners.js";
 import type * as catalog from "../catalog.js";
+import type * as cleanup from "../cleanup.js";
+import type * as crons from "../crons.js";
 import type * as favorites from "../favorites.js";
 import type * as gifts from "../gifts.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -37,6 +39,8 @@ declare const fullApi: ApiFromModules<{
   authInternal: typeof authInternal;
   banners: typeof banners;
   catalog: typeof catalog;
+  cleanup: typeof cleanup;
+  crons: typeof crons;
   favorites: typeof favorites;
   gifts: typeof gifts;
   "lib/auth": typeof lib_auth;

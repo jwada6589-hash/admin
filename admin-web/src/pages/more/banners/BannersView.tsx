@@ -89,7 +89,7 @@ export default function BannersView() {
         <div className="rounded-3xl border border-gray-100 bg-white px-6 py-14 text-center text-gray-500 shadow-sm">
           <Images className="mx-auto mb-3 h-10 w-10 text-gray-300" />
           <p className="font-bold text-gray-700">لا توجد صور بنر مرفوعة بعد</p>
-          <p className="mt-1 text-sm">ستبقى البنرات الحالية ظاهرة في التطبيق لحين رفع أول صورة.</p>
+          <p className="mt-1 text-sm">ارفع أول صورة لتظهر في تطبيق المستخدم.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

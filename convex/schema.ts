@@ -109,7 +109,9 @@ export default defineSchema({
     .index('by_enabled', ['isEnabled']),
 
   banners: defineTable({
-    imageStorageId: v.id('_storage'),
+    imageStorageId: v.optional(v.id('_storage')),
+    externalImageUrl: v.optional(v.string()),
+    legacyKey: v.optional(v.string()),
     sortOrder: v.number(),
     createdAt: v.number(),
   }).index('by_sort_order', ['sortOrder']),

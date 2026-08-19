@@ -65,7 +65,10 @@ export const adminList = query({
   args: { adminTokenHash: v.string() },
   handler: async (ctx, { adminTokenHash }) => {
     await requireAdmin(ctx, adminTokenHash);
-    return (await ctx.db.query('orders').order('desc').collect()).map((o) => ({
+    const deliveredVisibilityCutoff = Date.now() - 8 * 24 * 60 * 60 * 1000;
+    return (await ctx.db.query('orders').order('desc').collect())
+      .filter((o) => o.status !== 'DELIVERED' || o.updatedAt > deliveredVisibilityCutoff)
+      .map((o) => ({
       id: o._id, orderNumber: o.orderNumber, customerName: o.customer.fullName, phone: o.customer.phone,
       address: o.customer.address, landmark: o.customer.landmark, createdAt: new Date(o.createdAt).toISOString(),
       items: o.items.map((i, index) => ({ id: `${o._id}-${index}`, productId: i.productId, productName: i.productName, image: i.imageUrl ?? '', options: i.selectedOptions.map((option) => `${option.name}: ${option.value}`).join('، '), quantity: i.quantity, unitPrice: i.unitPrice, total: i.lineTotal })),
