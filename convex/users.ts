@@ -10,6 +10,16 @@ export const me = query({
   },
 });
 
+export const sessionStatus = query({
+  args: { tokenHash: v.string() },
+  handler: async (ctx, { tokenHash }) => {
+    const session = await ctx.db.query('userSessions').withIndex('by_token_hash', (q) => q.eq('tokenHash', tokenHash)).unique();
+    if (!session || session.expiresAt <= Date.now()) return false;
+    const user = await ctx.db.get(session.userId);
+    return Boolean(user && !user.isDeleted);
+  },
+});
+
 export const updateProfile = mutation({
   args: { tokenHash: v.string(), fullName: v.string(), address: v.string(), landmark: v.string(), notes: v.string() },
   handler: async (ctx, args) => {

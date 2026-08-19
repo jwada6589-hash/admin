@@ -56,7 +56,7 @@ export const approve = mutation({
     if (request.status === 'COMPLETED' || request.status === 'APPROVED') return { status: request.status, duplicate: true };
     if (request.status !== 'PENDING') throw new Error('REQUEST_NOT_PENDING');
     await ctx.db.patch(requestId, { status: 'APPROVED', reviewedAt: Date.now(), reviewedBy: admin._id });
-    await ctx.scheduler.runAfter(0, internal.accountDeletionRequests.completeDeletion, { requestId });
+    await ctx.scheduler.runAfter(1500, internal.accountDeletionRequests.completeDeletion, { requestId });
     return { status: 'APPROVED' as const, duplicate: false };
   },
 });
