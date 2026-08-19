@@ -1,16 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronLeft, Package, Clock, Truck, CheckCircle } from 'lucide-react';
+import { Search, ChevronLeft, Package, Clock, Truck, CheckCircle, Trash2 } from 'lucide-react';
 import { Order, OrderStatus, STATUS_DETAILS } from './types';
+import DeleteConfirmDialog from '../../components/DeleteConfirmDialog';
 
 interface OrdersListProps {
   orders: Order[];
+  onDeleteOrder: (orderId: string) => Promise<void>;
 }
 
-export default function OrdersList({ orders }: OrdersListProps) {
+export default function OrdersList({ orders, onDeleteOrder }: OrdersListProps) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    await onDeleteOrder(deleteConfirm);
+    setDeleteConfirm(null);
+  };
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = 
@@ -156,13 +165,21 @@ export default function OrdersList({ orders }: OrdersListProps) {
                 </div>
               </div>
               
-              <div className="flex flex-col justify-end border-t md:border-t-0 md:border-r border-gray-100 pt-3 md:pt-0 md:pr-4">
+              <div className="flex flex-row md:flex-col justify-end gap-2 border-t md:border-t-0 md:border-r border-gray-100 pt-3 md:pt-0 md:pr-4">
                 <button
                   onClick={() => navigate(`/orders/${order.id}`)}
-                  className="flex items-center justify-center md:justify-start gap-1 w-full md:w-auto text-[#055C33] bg-[#055C33]/5 hover:bg-[#055C33]/10 py-2.5 md:py-2 px-4 rounded-xl font-bold transition-colors"
+                  className="flex flex-1 items-center justify-center md:justify-start gap-1 w-full md:w-auto text-[#055C33] bg-[#055C33]/5 hover:bg-[#055C33]/10 py-2.5 md:py-2 px-4 rounded-xl font-bold transition-colors"
                 >
                   <span>عرض التفاصيل</span>
                   <ChevronLeft className="w-5 h-5 md:w-4 md:h-4" />
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(order.id)}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 font-bold text-red-600 transition-colors hover:bg-red-100 md:py-2"
+                  aria-label={`حذف الطلب ${order.orderNumber}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>حذف</span>
                 </button>
               </div>
             </div>
@@ -176,6 +193,15 @@ export default function OrdersList({ orders }: OrdersListProps) {
           </div>
         )}
       </div>
+
+      <DeleteConfirmDialog
+        open={Boolean(deleteConfirm)}
+        title="حذف الطلب؟"
+        description="سيُحذف الطلب نهائيًا من لوحة الإدارة ومن قائمة طلبات الزبون، دون تغيير رصيد المحفظة."
+        itemName={orders.find((order) => order.id === deleteConfirm)?.orderNumber}
+        onCancel={() => setDeleteConfirm(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

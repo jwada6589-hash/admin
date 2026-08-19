@@ -100,3 +100,13 @@ export const updateStatus = mutation({
     }
   },
 });
+
+export const deleteOrder = mutation({
+  args: { adminTokenHash: v.string(), orderId: v.id('orders') },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.adminTokenHash);
+    const order = await ctx.db.get(args.orderId);
+    if (!order) return;
+    await ctx.db.delete(order._id);
+  },
+});
