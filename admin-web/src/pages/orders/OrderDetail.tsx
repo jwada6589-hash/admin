@@ -3,6 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Phone, User, Package, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Order, OrderStatus, STATUS_DETAILS } from './types';
 
+function OrderItemImage({ src, alt }: { src: string; alt: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shrink-0 overflow-hidden">
+      {src && !hasError ? (
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <Package className="w-7 h-7 text-gray-300" aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
 interface OrderDetailProps {
   orders: Order[];
   onUpdateStatus: (orderId: string, status: OrderStatus, rejectReason?: string) => Promise<void>;
@@ -43,6 +62,7 @@ export default function OrderDetail({ orders, onUpdateStatus }: OrderDetailProps
   const confirmDeliver = async () => {
     await onUpdateStatus(order.id, 'DELIVERED');
     setIsConfirmDeliverModalOpen(false);
+    navigate('/orders', { replace: true });
   };
 
   const handleReject = async () => {
@@ -111,9 +131,7 @@ export default function OrderDetail({ orders, onUpdateStatus }: OrderDetailProps
             <div className="space-y-4">
               {order.items.map(item => (
                 <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                  <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-3xl border border-gray-100 shrink-0">
-                    {item.image}
-                  </div>
+                  <OrderItemImage src={item.image} alt={item.productName} />
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
                       <h4 className="font-bold text-gray-900 truncate pr-2">{item.productName}</h4>
