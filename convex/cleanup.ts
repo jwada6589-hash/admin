@@ -9,29 +9,34 @@ export const removeExpiredRecords = internalMutation({
     const now = Date.now();
     const cancelledGiftCutoff = now - DAY;
     const deliveredOrderCutoff = now - 10 * DAY;
+    const rejectedOrderCutoff = now - DAY;
 
     const cancelledRedemptions = await ctx.db
       .query('redemptions')
-      .withIndex('by_status', (q) => q.eq('status', 'CANCELLED'))
+      .withIndex('by_status_updated', (q) => q.eq('status', 'CANCELLED').lte('updatedAt', cancelledGiftCutoff))
       .collect();
     const deliveredOrders = await ctx.db
       .query('orders')
-      .withIndex('by_status', (q) => q.eq('status', 'DELIVERED'))
+      .withIndex('by_status_updated', (q) => q.eq('status', 'DELIVERED').lte('updatedAt', deliveredOrderCutoff))
+      .collect();
+    const rejectedOrders = await ctx.db
+      .query('orders')
+      .withIndex('by_status_updated', (q) => q.eq('status', 'REJECTED').lte('updatedAt', rejectedOrderCutoff))
       .collect();
 
     let deletedRedemptions = 0;
     let deletedOrders = 0;
     for (const redemption of cancelledRedemptions) {
-      if (redemption.updatedAt <= cancelledGiftCutoff) {
-        await ctx.db.delete(redemption._id);
-        deletedRedemptions += 1;
-      }
+      await ctx.db.delete(redemption._id);
+      deletedRedemptions += 1;
     }
     for (const order of deliveredOrders) {
-      if (order.updatedAt <= deliveredOrderCutoff) {
-        await ctx.db.delete(order._id);
-        deletedOrders += 1;
-      }
+      await ctx.db.delete(order._id);
+      deletedOrders += 1;
+    }
+    for (const order of rejectedOrders) {
+      await ctx.db.delete(order._id);
+      deletedOrders += 1;
     }
     return { deletedRedemptions, deletedOrders };
   },

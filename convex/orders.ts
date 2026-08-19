@@ -66,8 +66,13 @@ export const adminList = query({
   handler: async (ctx, { adminTokenHash }) => {
     await requireAdmin(ctx, adminTokenHash);
     const deliveredVisibilityCutoff = Date.now() - 8 * 24 * 60 * 60 * 1000;
-    return (await ctx.db.query('orders').order('desc').collect())
-      .filter((o) => o.status !== 'DELIVERED' || o.updatedAt > deliveredVisibilityCutoff)
+    const visibleStatuses = ['NEW', 'ACCEPTED', 'PREPARING', 'WITH_COURIER', 'REJECTED'] as const;
+    const [visibleGroups, delivered] = await Promise.all([
+      Promise.all(visibleStatuses.map((status) => ctx.db.query('orders').withIndex('by_status', (q) => q.eq('status', status)).collect())),
+      ctx.db.query('orders').withIndex('by_status_updated', (q) => q.eq('status', 'DELIVERED').gt('updatedAt', deliveredVisibilityCutoff)).collect(),
+    ]);
+    return [...visibleGroups.flat(), ...delivered]
+      .sort((a, b) => b.createdAt - a.createdAt)
       .map((o) => ({
       id: o._id, orderNumber: o.orderNumber, customerName: o.customer.fullName, phone: o.customer.phone,
       address: o.customer.address, landmark: o.customer.landmark, createdAt: new Date(o.createdAt).toISOString(),

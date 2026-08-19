@@ -197,10 +197,15 @@ export const dashboard = query({
   args: { adminTokenHash: v.string() },
   handler: async (ctx, { adminTokenHash }) => {
     await requireAdmin(ctx, adminTokenHash);
-    const [allOrders, products, categories, branches, offers] = await Promise.all([ctx.db.query('orders').order('desc').collect(), ctx.db.query('products').collect(), ctx.db.query('categories').collect(), ctx.db.query('subcategories').collect(), ctx.db.query('offers').collect()]);
     const now = Date.now();
     const deliveredVisibilityCutoff = now - 8 * 24 * 60 * 60 * 1000;
-    const orders = allOrders.filter((order) => order.status !== 'DELIVERED' || order.updatedAt > deliveredVisibilityCutoff);
+    const visibleStatuses = ['NEW', 'ACCEPTED', 'PREPARING', 'WITH_COURIER', 'REJECTED'] as const;
+    const [orderGroups, deliveredOrders, products, categories, branches, offers] = await Promise.all([
+      Promise.all(visibleStatuses.map((status) => ctx.db.query('orders').withIndex('by_status', (q) => q.eq('status', status)).collect())),
+      ctx.db.query('orders').withIndex('by_status_updated', (q) => q.eq('status', 'DELIVERED').gt('updatedAt', deliveredVisibilityCutoff)).collect(),
+      ctx.db.query('products').collect(), ctx.db.query('categories').collect(), ctx.db.query('subcategories').collect(), ctx.db.query('offers').collect(),
+    ]);
+    const orders = [...orderGroups.flat(), ...deliveredOrders].sort((a, b) => b.createdAt - a.createdAt);
     const count = (status: string) => orders.filter((o) => o.status === status).length;
     return {
       stats: { newOrders: count('NEW'), preparing: count('PREPARING'), withCourier: count('WITH_COURIER'), delivered: count('DELIVERED'), products: products.length, categories: categories.length, branches: branches.length, activeOffers: offers.filter((o) => o.isEnabled && o.startAt <= now && o.endAt >= now).length },

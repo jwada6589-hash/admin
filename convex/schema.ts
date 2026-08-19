@@ -157,6 +157,7 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_status', ['status'])
+    .index('by_status_updated', ['status', 'updatedAt'])
     .index('by_order_number', ['orderNumber']),
 
   wallets: defineTable({
@@ -206,6 +207,7 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_status', ['status'])
+    .index('by_status_updated', ['status', 'updatedAt'])
     .index('by_idempotency', ['userId', 'idempotencyKey']),
 
   storeSettings: defineTable({
