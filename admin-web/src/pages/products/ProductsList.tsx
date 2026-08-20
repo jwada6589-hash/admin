@@ -191,8 +191,17 @@ export default function ProductsList() {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/50 backdrop-blur-sm sm:p-4">
           <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100 shrink-0">
-              <h3 className="font-bold text-lg">{editingId ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h3>
+            <div className="flex justify-between items-center gap-2 p-4 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="font-bold text-base sm:text-lg whitespace-nowrap">{editingId ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h3>
+                <button
+                  type="button"
+                  onClick={handleAddProduct}
+                  className="shrink-0 px-3 py-2 bg-[#055C33] hover:bg-[#044727] text-white text-sm font-bold rounded-xl transition-colors"
+                >
+                  حفظ المنتج
+                </button>
+              </div>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
@@ -332,14 +341,6 @@ export default function ProductsList() {
 
             </div>
             
-            <div className="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50 shrink-0">
-              <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors">
-                إلغاء
-              </button>
-              <button onClick={handleAddProduct} className="px-4 py-2 bg-[#055C33] hover:bg-[#044727] text-white font-bold rounded-xl transition-colors">
-                حفظ المنتج
-              </button>
-            </div>
           </div>
         </div>
       )}
