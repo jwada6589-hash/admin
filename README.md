@@ -3,8 +3,8 @@
 لوحة الإدارة مرتبطة بقاعدة البيانات الحقيقية على Convex Cloud:
 
 - Project: `al-murtada-market`
-- Deployment: `fiery-dachshund-744`
-- Cloud URL: `https://fiery-dachshund-744.convex.cloud`
+- Deployment: `hushed-zebra-824` (Production)
+- Cloud URL: `https://hushed-zebra-824.convex.cloud`
 
 ## التشغيل المحلي
 

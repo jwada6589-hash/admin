@@ -26,7 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_CONVEX_URL: https://fiery-dachshund-744.convex.cloud
+          VITE_CONVEX_URL: https://hushed-zebra-824.convex.cloud
       - name: Add SPA fallback
         run: cp admin-web/dist/index.html admin-web/dist/404.html
       - uses: actions/configure-pages@v5
