@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, Folder, Image as ImageIcon, X } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Folder, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useAdmin } from '../../shared/context/AdminContext';
@@ -23,20 +23,33 @@ export default function CategoriesList() {
   const [newCatImage, setNewCatImage] = useState('');
   const [newCatFile, setNewCatFile] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const filteredCategories = categories.filter(c => 
     c.name.includes(searchQuery)
   );
 
   const handleAddCategory = async () => {
-    if (!newCatName.trim()) return;
-    const imageStorageId = await upload(newCatFile);
-    await saveCategory({ adminTokenHash: tokenHash, id: editingId as any || undefined, name: newCatName, imageStorageId: imageStorageId as any });
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    setNewCatName('');
-    setNewCatImage('');
-    setNewCatFile(null);
+    if (!newCatName.trim()) {
+      setFormError('اكتب اسم القسم أولاً.');
+      return;
+    }
+    setIsSaving(true);
+    setFormError('');
+    try {
+      const imageStorageId = await upload(newCatFile, { maxDimension: 640, targetBytes: 140 * 1024 });
+      await saveCategory({ adminTokenHash: tokenHash, id: editingId as any || undefined, name: newCatName, imageStorageId: imageStorageId as any });
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      setNewCatName('');
+      setNewCatImage('');
+      setNewCatFile(null);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'تعذر حفظ القسم. حاول مرة أخرى.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -67,7 +80,7 @@ export default function CategoriesList() {
             />
           </div>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => { setFormError(''); setIsAddModalOpen(true); }}
             className="bg-[#055C33] hover:bg-[#044727] text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
@@ -94,7 +107,7 @@ export default function CategoriesList() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 shrink-0 ml-2" onClick={e => e.stopPropagation()}>
-                <button onClick={() => { setEditingId(category.id); setNewCatName(category.name); setIsAddModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <button onClick={() => { setFormError(''); setEditingId(category.id); setNewCatName(category.name); setIsAddModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button 
@@ -125,6 +138,7 @@ export default function CategoriesList() {
               </button>
             </div>
             <div className="p-4 space-y-4">
+              {formError && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">{formError}</div>}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">اسم القسم</label>
                 <input
@@ -143,19 +157,21 @@ export default function CategoriesList() {
                   </div>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={e => setNewCatFile(e.target.files?.[0] || null)}
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={e => { setFormError(''); setNewCatFile(e.target.files?.[0] || null); }}
                     className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#055C33] focus:ring-1 focus:ring-[#055C33]"
                   />
                 </div>
+                <p className="mt-1 text-xs text-gray-400">JPG أو PNG أو WebP — تُضغط الصورة تلقائياً قبل الرفع.</p>
               </div>
             </div>
             <div className="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
               <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors">
                 إلغاء
               </button>
-              <button onClick={handleAddCategory} className="px-4 py-2 bg-[#055C33] hover:bg-[#044727] text-white font-bold rounded-xl transition-colors">
-                حفظ القسم
+              <button disabled={isSaving} onClick={handleAddCategory} className="px-4 py-2 bg-[#055C33] hover:bg-[#044727] text-white font-bold rounded-xl transition-colors disabled:cursor-wait disabled:opacity-70 flex items-center gap-2">
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSaving ? 'جارٍ الضغط والحفظ...' : 'حفظ القسم'}
               </button>
             </div>
           </div>

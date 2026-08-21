@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, ArrowRight, Package, Image as ImageIcon, X } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, ArrowRight, Package, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useAdmin } from '../../shared/context/AdminContext';
@@ -27,6 +27,8 @@ export default function BranchesList() {
   const [newBranchImage, setNewBranchImage] = useState('');
   const [newBranchFile, setNewBranchFile] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   if (!category) {
     return <div className="p-8 text-center text-gray-500">القسم غير موجود</div>;
@@ -37,14 +39,25 @@ export default function BranchesList() {
   );
 
   const handleAddBranch = async () => {
-    if (!newBranchName.trim()) return;
-    const imageStorageId = await upload(newBranchFile);
-    await saveSubcategory({ adminTokenHash: tokenHash, id: editingId as any || undefined, categoryId: category.id as any, name: newBranchName, imageStorageId: imageStorageId as any });
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    setNewBranchName('');
-    setNewBranchImage('');
-    setNewBranchFile(null);
+    if (!newBranchName.trim()) {
+      setFormError('اكتب اسم الفرع أولاً.');
+      return;
+    }
+    setIsSaving(true);
+    setFormError('');
+    try {
+      const imageStorageId = await upload(newBranchFile, { maxDimension: 640, targetBytes: 140 * 1024 });
+      await saveSubcategory({ adminTokenHash: tokenHash, id: editingId as any || undefined, categoryId: category.id as any, name: newBranchName, imageStorageId: imageStorageId as any });
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      setNewBranchName('');
+      setNewBranchImage('');
+      setNewBranchFile(null);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'تعذر حفظ الفرع. حاول مرة أخرى.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -86,7 +99,7 @@ export default function BranchesList() {
             />
           </div>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => { setFormError(''); setIsAddModalOpen(true); }}
             className="bg-[#055C33] hover:bg-[#044727] text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
@@ -113,7 +126,7 @@ export default function BranchesList() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 shrink-0 ml-2" onClick={e => e.stopPropagation()}>
-                <button onClick={() => { setEditingId(branch.id); setNewBranchName(branch.name); setIsAddModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <button onClick={() => { setFormError(''); setEditingId(branch.id); setNewBranchName(branch.name); setIsAddModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button 
@@ -144,6 +157,7 @@ export default function BranchesList() {
               </button>
             </div>
             <div className="p-4 space-y-4">
+              {formError && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">{formError}</div>}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">اسم الفرع</label>
                 <input
@@ -162,11 +176,12 @@ export default function BranchesList() {
                   </div>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={e => setNewBranchFile(e.target.files?.[0] || null)}
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={e => { setFormError(''); setNewBranchFile(e.target.files?.[0] || null); }}
                     className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#055C33] focus:ring-1 focus:ring-[#055C33]"
                   />
                 </div>
+                <p className="mt-1 text-xs text-gray-400">JPG أو PNG أو WebP — تُضغط الصورة تلقائياً قبل الرفع.</p>
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">القسم التابع له</label>
@@ -182,8 +197,9 @@ export default function BranchesList() {
               <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors">
                 إلغاء
               </button>
-              <button onClick={handleAddBranch} className="px-4 py-2 bg-[#055C33] hover:bg-[#044727] text-white font-bold rounded-xl transition-colors">
-                حفظ الفرع
+              <button disabled={isSaving} onClick={handleAddBranch} className="px-4 py-2 bg-[#055C33] hover:bg-[#044727] text-white font-bold rounded-xl transition-colors disabled:cursor-wait disabled:opacity-70 flex items-center gap-2">
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSaving ? 'جارٍ الضغط والحفظ...' : 'حفظ الفرع'}
               </button>
             </div>
           </div>

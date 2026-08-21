@@ -42,7 +42,7 @@ export default function BannersView() {
     let uploaded = 0;
     try {
       for (const file of files) {
-        const storageId = await uploadFile(file);
+        const storageId = await uploadFile(file, { maxDimension: 1600, targetBytes: 600 * 1024 });
         if (!storageId) continue;
         await addBanner({ adminTokenHash: tokenHash, imageStorageId: storageId });
         uploaded += 1;
@@ -68,7 +68,7 @@ export default function BannersView() {
       </div>
 
       <div className="rounded-3xl border border-dashed border-[#055C33]/30 bg-white p-6 text-center shadow-sm">
-        <input ref={inputRef} type="file" accept="image/*" multiple onChange={handleFiles} className="hidden" />
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFiles} className="hidden" />
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-50 text-[#055C33]">
           <ImagePlus className="h-7 w-7" />
         </div>
