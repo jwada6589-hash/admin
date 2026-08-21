@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Power, PowerOff, X, Image as ImageIcon, Gift as GiftIcon } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Power, PowerOff, X, Image as ImageIcon, Gift as GiftIcon, Loader2 } from 'lucide-react';
 import { Gift, GiftStatus, GIFT_STATUS_DEF, getGiftStatus } from './types';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
@@ -29,6 +29,7 @@ export default function GiftsList() {
   const [quantity, setQuantity] = useState('');
   const [isDisabled, setIsDisabled] = useState(false);
   const [formError, setFormError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const enrichedGifts = gifts.map(g => ({ ...g, status: getGiftStatus(g) }));
 
@@ -71,9 +72,17 @@ export default function GiftsList() {
     if (isNaN(reqBal) || reqBal < 0) { setFormError('الرصيد المطلوب غير صالح'); return; }
     if (isNaN(qty) || qty < 0 || !Number.isInteger(qty)) { setFormError('الكمية غير صالحة'); return; }
 
-    const imageStorageId = await upload(imageFile);
-    await saveGift({ adminTokenHash: tokenHash, id: editingGiftId as any || undefined, name, description, imageStorageId: imageStorageId as any, requiredBalance: reqBal, stock: qty, isActive: !isDisabled });
-    setIsFormOpen(false);
+    setIsSaving(true);
+    setFormError('');
+    try {
+      const imageStorageId = await upload(imageFile, { maxDimension: 960, targetBytes: 250 * 1024 });
+      await saveGift({ adminTokenHash: tokenHash, id: editingGiftId as any || undefined, name, description, imageStorageId: imageStorageId as any, requiredBalance: reqBal, stock: qty, isActive: !isDisabled });
+      setIsFormOpen(false);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'تعذر حفظ الهدية. حاول مرة أخرى.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleStatus = async (id: string, currentIsDisabled: boolean) => {
@@ -243,7 +252,7 @@ export default function GiftsList() {
                   </div>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={e => setImageFile(e.target.files?.[0] || null)}
                     className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#055C33] focus:ring-1 focus:ring-[#055C33]"
                   />
@@ -304,10 +313,12 @@ export default function GiftsList() {
                 إلغاء
               </button>
               <button 
+                disabled={isSaving}
                 onClick={handleSave}
-                className="px-6 py-2.5 bg-[#055C33] hover:bg-[#044727] text-white font-bold rounded-xl transition-colors shadow-sm"
+                className="px-6 py-2.5 bg-[#055C33] hover:bg-[#044727] text-white font-bold rounded-xl transition-colors shadow-sm disabled:cursor-wait disabled:opacity-70 flex items-center gap-2"
               >
-                حفظ الهدية
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSaving ? 'جارٍ الضغط والحفظ...' : 'حفظ الهدية'}
               </button>
             </div>
           </div>

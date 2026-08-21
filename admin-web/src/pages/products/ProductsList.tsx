@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, ArrowRight, X, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, ArrowRight, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Product, ProductOption } from './types';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
@@ -34,6 +34,8 @@ export default function ProductsList() {
   const [newProdFile, setNewProdFile] = useState<File | null>(null);
   const [isAvailable, setIsAvailable] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState('');
   
   // Options State
   const [options, setOptions] = useState<ProductOption[]>([]);
@@ -70,21 +72,32 @@ export default function ProductsList() {
   };
 
   const handleAddProduct = async () => {
-    if (!newProdName.trim() || !newProdPrice) return;
-    const imageStorageId = await upload(newProdFile);
-    await saveProduct({ adminTokenHash: tokenHash, id: editingId as any || undefined, categoryId: category.id as any, subcategoryId: branch.id as any, name: newProdName, description: newProdDesc, price: Number(newProdPrice), imageStorageId: imageStorageId as any, options, isActive: isAvailable });
-    setIsAddModalOpen(false);
-    setEditingId(null);
-    // Reset form
-    setNewProdName('');
-    setNewProdDesc('');
-    setNewProdPrice('');
-    setNewProdImage('');
-    setNewProdFile(null);
-    setIsAvailable(true);
-    setOptions([]);
-    setCurrentOptionName('');
-    setCurrentOptionValue('');
+    if (!newProdName.trim() || !newProdPrice) {
+      setFormError('اكتب اسم المنتج والسعر أولاً.');
+      return;
+    }
+    setIsSaving(true);
+    setFormError('');
+    try {
+      const imageStorageId = await upload(newProdFile, { maxDimension: 1200, targetBytes: 350 * 1024 });
+      await saveProduct({ adminTokenHash: tokenHash, id: editingId as any || undefined, categoryId: category.id as any, subcategoryId: branch.id as any, name: newProdName, description: newProdDesc, price: Number(newProdPrice), imageStorageId: imageStorageId as any, options, isActive: isAvailable });
+      setIsAddModalOpen(false);
+      setEditingId(null);
+      // Reset form
+      setNewProdName('');
+      setNewProdDesc('');
+      setNewProdPrice('');
+      setNewProdImage('');
+      setNewProdFile(null);
+      setIsAvailable(true);
+      setOptions([]);
+      setCurrentOptionName('');
+      setCurrentOptionValue('');
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'تعذر حفظ المنتج. حاول مرة أخرى.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -126,7 +139,7 @@ export default function ProductsList() {
             />
           </div>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => { setFormError(''); setIsAddModalOpen(true); }}
             className="bg-[#055C33] hover:bg-[#044727] text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
@@ -166,7 +179,7 @@ export default function ProductsList() {
               <div className="flex items-center justify-between mt-2">
                 <span className="font-bold text-[#055C33]">{product.price.toLocaleString('ar-IQ')} د.ع</span>
                 <div className="flex gap-1">
-                  <button onClick={() => { setEditingId(product.id); setNewProdName(product.name); setNewProdDesc(product.description); setNewProdPrice(String(product.price)); setIsAvailable(product.isAvailable); setOptions(product.options); setIsAddModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  <button onClick={() => { setFormError(''); setEditingId(product.id); setNewProdName(product.name); setNewProdDesc(product.description); setNewProdPrice(String(product.price)); setIsAvailable(product.isAvailable); setOptions(product.options); setIsAddModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button 
@@ -196,10 +209,12 @@ export default function ProductsList() {
                 <h3 className="font-bold text-base sm:text-lg whitespace-nowrap">{editingId ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h3>
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={handleAddProduct}
-                  className="shrink-0 px-3 py-2 bg-[#055C33] hover:bg-[#044727] text-white text-sm font-bold rounded-xl transition-colors"
+                  className="shrink-0 px-3 py-2 bg-[#055C33] hover:bg-[#044727] text-white text-sm font-bold rounded-xl transition-colors disabled:cursor-wait disabled:opacity-70 flex items-center gap-2"
                 >
-                  حفظ المنتج
+                  {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isSaving ? 'جارٍ الحفظ...' : 'حفظ المنتج'}
                 </button>
               </div>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg transition-colors">
@@ -208,6 +223,7 @@ export default function ProductsList() {
             </div>
             
             <div className="p-4 overflow-y-auto space-y-5">
+              {formError && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">{formError}</div>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">اسم المنتج</label>
@@ -239,11 +255,12 @@ export default function ProductsList() {
                   </div>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={e => setNewProdFile(e.target.files?.[0] || null)}
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={e => { setFormError(''); setNewProdFile(e.target.files?.[0] || null); }}
                     className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#055C33] focus:ring-1 focus:ring-[#055C33]"
                   />
                 </div>
+                <p className="mt-1 text-xs text-gray-400">JPG أو PNG أو WebP — تُضغط الصورة تلقائياً قبل الرفع.</p>
               </div>
 
               <div>
